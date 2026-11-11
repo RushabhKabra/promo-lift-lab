@@ -1,0 +1,19 @@
+[project]
+name = "promo-lift-lab"
+version = "0.1.0"
+description = "A weekend lab for measuring whether grocery promotions actually earn their keep."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "quality"]
+pythonpath = ["."]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["data", "exports", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
