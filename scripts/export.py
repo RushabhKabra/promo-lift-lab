@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from warehouse.load import read_df  # noqa: E402
 
 BI = ROOT / "exports" / "bi"
 EXCEL = ROOT / "exports" / "excel"
+CURATED = ROOT / "exports" / "curated"
 
 INK = "1F1A17"
 GREEN = "1F6B4A"
@@ -85,10 +87,56 @@ def main() -> None:
             frame.to_csv(BI / f"{name}.csv", index=False)
     dictionary = pd.DataFrame(DICTIONARY, columns=["table", "column", "name", "definition"])
     dictionary.to_csv(BI / "data_dictionary.csv", index=False)
+    curated_frames = dict(frames)
+    curated_frames["weekly_total"] = read_df(engine, "SELECT * FROM marts.v_weekly_total ORDER BY week_no")
+    curated_files = write_curated_frames(curated_frames, CURATED)
     _excel(frames, dictionary)
     _bi_readme()
     print(f"wrote {EXCEL / 'promo_weekly_brief.xlsx'}")
+    print(f"wrote {sum(curated_files.values())} curated parquet files under {CURATED}")
 
+
+
+
+def is_weekly_mart(name: str, frame: pd.DataFrame) -> bool:
+    """Partition study-week marts, not dimensions that merely have a week key."""
+    return "week_no" in frame.columns and not name.startswith("dim_")
+
+
+def curated_partition_path(base: Path, name: str, week_no: int) -> Path:
+    return base / name / f"week_no={int(week_no)}" / "part.parquet"
+
+
+def curated_table_path(base: Path, name: str) -> Path:
+    return base / name / "part.parquet"
+
+
+def write_curated_frames(frames: dict[str, pd.DataFrame], dest: Path | None = None) -> dict[str, int]:
+    """Publish marts as parquet. Weekly marts go in week_no= folders, like a dated planner."""
+    dest = dest or CURATED
+    dest.mkdir(parents=True, exist_ok=True)
+    for child in dest.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child)
+    written: dict[str, int] = {}
+    for name, frame in frames.items():
+        if frame is None:
+            written[name] = 0
+            continue
+        if is_weekly_mart(name, frame) and len(frame):
+            files = 0
+            for week_no, part in frame.groupby("week_no", sort=True):
+                path = curated_partition_path(dest, name, int(week_no))
+                path.parent.mkdir(parents=True, exist_ok=True)
+                part.to_parquet(path, index=False)
+                files += 1
+            written[name] = files
+        else:
+            path = curated_table_path(dest, name)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            frame.to_parquet(path, index=False)
+            written[name] = 1
+    return written
 
 def _excel(frames: dict[str, pd.DataFrame], dictionary: pd.DataFrame) -> None:
     book = Workbook()

@@ -48,3 +48,35 @@ def assert_clean(engine: Engine) -> None:
         lines.append(f"{name}: {len(frame)} failing row(s)")
         lines.append(frame.head(5).to_string(index=False))
     raise SystemExit("Quality checks failed.\n" + "\n".join(lines))
+
+def collect_assertion_results(engine: Engine) -> list[dict]:
+    """Run every named assertion and return passes as well as failures."""
+    results: list[dict] = []
+    with engine.connect() as conn:
+        for name, statement in parse_assertions():
+            try:
+                frame = pd.read_sql(text(statement), conn)
+                failing = int(len(frame))
+                detail = frame.head(5).to_json(orient="records") if failing else None
+                results.append(
+                    {
+                        "assertion_name": name,
+                        "passed": failing == 0,
+                        "failing_rows": failing,
+                        "detail": detail,
+                    }
+                )
+            except Exception as exc:  # noqa: BLE001 — record a broken check, do not hide it
+                results.append(
+                    {
+                        "assertion_name": name,
+                        "passed": False,
+                        "failing_rows": -1,
+                        "detail": str(exc),
+                    }
+                )
+    return results
+
+
+def quality_gate_failed(results: list[dict]) -> bool:
+    return any(not result["passed"] for result in results)

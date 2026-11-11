@@ -6,7 +6,7 @@ A weekend lab for measuring whether grocery promotions actually earn their keep.
 
 I wanted to know how much of a promoted week's volume would have happened anyway. A yellow tag moves units. It also moves the weeks I would have sold those units in. Without a baseline, every spike looks like a win.
 
-Grocery data has been part of my weeks for long enough that the question stopped being abstract. I built this on the public Complete Journey household panel so I could argue with the numbers on my own time: cash received, discount cost, a baseline, and the campaigns that do not pay.
+Planning weekly orders and sales planners on the grocery floor at Loblaws is what made the question stop being abstract. I built this on the public Complete Journey household panel, not on store data from work, so I could argue with the numbers on my own time: cash received, discount cost, a baseline, and the campaigns that do not pay.
 
 ## What you can explore
 
@@ -47,10 +47,15 @@ flowchart LR
   stage --> star[Star schema]
   star --> checks[Grain, identity, reconciliation]
   checks --> marts[Lift, forecast, segments]
+  checks --> audit[Run audit]
   marts --> app[Streamlit]
   marts --> xl[Excel briefing]
   marts --> ask[Ask page]
+  marts --> curated[Week-partitioned parquet]
+  audit --> curated
 ```
+
+`make pipeline` is the path I actually want: land the files, rebuild the warehouse, fail the run if a total drifts, and publish the marts into week folders. One `run_id` ties the steps, the quality results, and the lineage together. I added that because a Monday planner is dated and checked; a rebuild should be too.
 
 ## Data
 
@@ -71,10 +76,10 @@ cp .env.example .env
 docker compose up -d
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-make ingest && make build && make test && make export && make app
+make pipeline && make app
 ```
 
-`make ingest` downloads the mirrors into `data/raw` (not committed) and loads staging. `make build` rebuilds the star schema, refuses to continue if the totals drift, and writes the marts. `make test` runs the unit tests and, when Postgres is up, the SQL assertions.
+`make pipeline` runs ingest, build, tests, and export under one run id. `make ingest` still downloads the mirrors into `data/raw` (not committed) and loads staging if you want the steps one at a time. `make build` rebuilds the star schema, refuses to continue if the totals drift, and writes the marts. `make test` runs the unit tests and, when Postgres is up, the SQL assertions. After a successful pipeline run, the marts also land in `exports/curated/` as parquet, with one folder per study week where the grain is weekly.
 
 The ask page works with no API key. It answers from the certified snapshot and prints the metric, the grain, and the period. If you set `OPENAI_API_KEY` (and `pip install openai`), the same page will also ask a model. The model only receives the aggregate snapshot and the glossary, not household rows. `LLM_MODEL` defaults to `gpt-4o-mini`.
 
@@ -84,18 +89,18 @@ A question from the shell:
 python -m insights.answer "Which campaigns lost money after discounts?"
 ```
 
-CI uses the committed slice in `data/fixtures` and does not download anything. That slice is real rows. It is not big enough to re-estimate the findings above.
+CI uses the committed slice in `data/fixtures` and does not download anything. That slice is real rows. It is not big enough to re-estimate the findings above. CI runs `python scripts/run_pipeline.py --source fixtures`.
 
 ## What's in each folder
 
-- `warehouse/` — staging, the star schema, and the views I will quote.
+- `warehouse/` — staging, the star schema, the views I will quote, and the `ops` run audit.
 - `quality/` — the contracts and the assertions that fail the build.
 - `analysis/` — lift, the forecast horse-race, segments, baskets, anomalies.
 - `app/` — the five pages.
 - `insights/` — the question layer, templated unless a key is set.
-- `exports/` — the Excel briefing and the CSV extracts.
+- `exports/` — the Excel briefing, the CSV extracts, and week-partitioned parquet under `exports/curated/`.
 - `docs/` — the question, the formulas, the process, and the brief.
-- `scripts/` — ingest, build, export.
+- `scripts/` — ingest, build, export, and `run_pipeline.py` for a single run id.
 - `data/fixtures/` — the small slice CI runs on.
 
 ## How I define the numbers

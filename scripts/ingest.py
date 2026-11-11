@@ -55,30 +55,33 @@ PROCESSED = PROJECT_ROOT / "data" / "processed"
 FIXTURES = PROJECT_ROOT / "data" / "fixtures"
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> str:
     parser = argparse.ArgumentParser(description="Load source files into staging.")
     parser.add_argument("--source", choices=["github", "fixtures", "kaggle-csv", "uci"], default="github")
     parser.add_argument("--dir", type=Path, default=None, help="Folder of Kaggle CSVs or raw mirrors.")
     parser.add_argument("--refresh", action="store_true", help="Ignore the parquet cache and reread the source.")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    return load_staging(source=args.source, data_dir=args.dir, refresh=args.refresh)
 
+
+def load_staging(source: str = "github", data_dir: Path | None = None, refresh: bool = False) -> str:
     engine = get_engine()
     run_sql_file(engine, PROJECT_ROOT / "warehouse" / "ddl" / "001_schemas.sql")
     run_sql_file(engine, PROJECT_ROOT / "warehouse" / "ddl" / "002_staging.sql")
 
-    if args.source == "fixtures":
+    if source == "fixtures":
         frames = _read_fixture_parquets()
         source_name = "fixtures"
-    elif args.source == "kaggle-csv":
-        folder = args.dir or (RAW / "kaggle")
+    elif source == "kaggle-csv":
+        folder = data_dir or (RAW / "kaggle")
         frames = _read_kaggle(folder)
         source_name = "kaggle-csv"
-    elif args.source == "uci":
+    elif source == "uci":
         frames = _read_uci()
         source_name = "uci-online-retail-ii"
     else:
         try:
-            frames = _read_github(refresh=args.refresh)
+            frames = _read_github(refresh=refresh)
             source_name = "completejourney-github"
         except Exception as exc:  # noqa: BLE001 — fallback is the documented path
             print(f"GitHub mirrors unavailable ({exc}). Falling back to UCI Online Retail II.")
@@ -87,6 +90,7 @@ def main() -> None:
 
     _land(engine, frames, source_name)
     print(f"staging loaded from {source_name}")
+    return source_name
 
 
 def _read_github(refresh: bool) -> dict[str, pd.DataFrame]:
