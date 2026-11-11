@@ -1,0 +1,21 @@
+table,column,name,definition
+dim_date,date_key,Calendar date,One row per calendar date in the study.
+dim_date,primary_week_no,Study week,"Week with the most receipts that day. The cutover is early morning, so a date can touch two weeks."
+dim_week,week_no,Study week number,"The week printed on the receipt, 1 to 53. Not an ISO week."
+dim_week,is_partial,Partial week,True when the week covers fewer than 6 dates. Week 1 is partial.
+dim_product,department,Department,Top of the product hierarchy.
+dim_product,product_category,Category,Commodity. The worked example lives at this grain.
+dim_product,is_fuel,Fuel flag,Gasoline quantity is scaled and is excluded from grocery unit totals.
+dim_household,has_demographics,Demographics present,Only a subset of households have age and income bins.
+dim_campaign,campaign_type,Campaign type,"Type A, B, or C as labeled by the study. I treat the household list as the mailed group for every type."
+fct_transactions,sales_value,Net sales,Cash the retailer received. Already net of the three discounts.
+fct_transactions,gross_sales,Gross sales proxy,sales_value + retail_discount + coupon_discount + match_discount.
+fct_transactions,discount_cost,Discount cost,"Sum of the three discount fields, stored as positive costs."
+fct_transactions,grocery_units,Grocery units,"Quantity, with fuel lines set to 0."
+fct_transactions,on_feature,On feature,The product-store-week appears in the promotions file (display or mailer).
+campaign_results,incremental_sales,Incremental net sales,"Difference-in-differences on household weekly net sales, times treated households, times campaign weeks."
+campaign_results,roi,Promo ROI proxy,incremental_sales / coupon and match discounts on couponed products for mailed households.
+campaign_results,redemption_rate,Redemption rate,Redemptions / (mailed households × distinct coupon UPCs).
+department_lift,lift_pct,Feature lift,"Feature-week sales / baseline-week sales − 1, weighted by dollars, on pairs with enough history."
+forecast_scores,weighted_mape,Forecast MAPE,Sum of absolute errors / sum of actual net sales on the holdout.
+segment_summary,promo_sensitive_share,Promo-sensitive share,"Households whose discount share of the pre-discount ring is at least 18%, with 8 or more baskets."
