@@ -33,11 +33,5 @@ jobs:
         run: pip install -r requirements.txt
       - name: Lint
         run: ruff check .
-      - name: Load fixtures
-        run: python scripts/ingest.py --source fixtures
-      - name: Build
-        run: python scripts/build.py
-      - name: Test
-        run: python -m pytest -q
-      - name: Export
-        run: python scripts/export.py
+      - name: Pipeline
+        run: python scripts/run_pipeline.py --source fixtures

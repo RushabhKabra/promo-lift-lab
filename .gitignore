@@ -28,3 +28,8 @@ exports/briefs/*
 # Local scratch
 tmp/
 *.log
+
+# Regenerated week-partitioned marts. The folder readme stays in git.
+exports/curated/**
+!exports/curated/.gitkeep
+!exports/curated/README.md

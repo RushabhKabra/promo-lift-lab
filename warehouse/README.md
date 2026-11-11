@@ -4,9 +4,10 @@ Local Postgres. Nothing here assumes a cloud account. `docker compose up -d` sta
 
 ## Schemas
 
-- `staging` — typed landing tables, a reject pile, and a run log. Ingest truncates and reloads these. It does not touch the star schema.
+- `staging` — typed landing tables, a reject pile, and a per-table ingest run log. Ingest truncates and reloads these. It does not touch the star schema.
 - `core` — dimensions and facts. `make build` drops and recreates this schema.
 - `marts` — descriptive views and the analytical tables the app reads. Also recreated on build.
+- `ops` — end-to-end run audit. `make pipeline` writes one row to `ops.pipeline_runs`, step timings and row counts, every quality assertion, and the lineage from a landed file to a mart. A failed quality gate marks the run failed and skips publish.
 
 ## Grains and keys
 
@@ -46,3 +47,5 @@ Household RFM rows live in `marts.household_rfm` and are not part of the snapsho
 ## Rebuild
 
 `make build` is idempotent. It will refuse to finish if fact sales drift from staging by more than $1 or 0.01%, whichever is larger. That check is `quality/assertions.sql`.
+
+`make pipeline` runs ingest, build, tests, and export under one `run_id`. Curated marts are written to `exports/curated/`, with weekly tables in `week_no=<n>/` folders.
