@@ -24,6 +24,8 @@ The app reads certified marts. Nothing on a page is computed in the button that 
 
 The written pass is [`docs/executive-brief.md`](docs/executive-brief.md). The formulas are in [`docs/metrics-glossary.md`](docs/metrics-glossary.md).
 
+Read as a CPG trade-spend post-evaluation: [`docs/trade-spend-read.md`](docs/trade-spend-read.md).
+
 ## What the year actually did
 
 Study window 1 January 2017 to 1 January 2018, the calendar the Complete Journey mirror uses. 2,469 households, 1,469,307 receipt lines, 155,848 baskets.
