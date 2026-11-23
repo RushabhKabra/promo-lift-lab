@@ -39,6 +39,8 @@ Study window 1 January 2017 to 1 January 2018, the calendar the Complete Journey
 
 Deli meats is the category I would walk through: 470 pairs, feature-week sales $6,926.22, quiet-week run-rate $4,601.67, gap $2,324.55 (50.52%), discounts $1,107.22, ROI proxy 2.10. It is one of the few places the extra cash covered the discount. The campaign test is stricter than that, and it is the one I would defend.
 
+Read by discount depth, below 20% each discount dollar returned more than a dollar of extra sales; from 20% up it did not, and 96.65% of feature-week discount dollars sat there. [`docs/pricing-view.md`](docs/pricing-view.md) has the bands, the promotions that did not earn their discount, and a PivotTable in the Excel briefing.
+
 Fact sales reconciled to staging with a drift of about a hundred-millionth of a dollar. The build fails if that drift exceeds $1 or 0.01%.
 
 ## How the lab is put together
