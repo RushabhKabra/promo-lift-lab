@@ -41,7 +41,7 @@ def inject() -> None:
           @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,560;8..60,650&display=swap');
           html, body, [class*="css"] { font-family: "Source Sans 3", "Segoe UI", sans-serif; }
           h1, h2, h3 { font-family: "Source Serif 4", Georgia, serif !important; letter-spacing: -0.02em; }
-          .block-container { padding-top: 1.4rem; max-width: 1180px; }
+          .block-container { padding-top: 3.4rem; max-width: 1180px; }
           div[data-testid="stMetric"] {
             background: #fffdf9;
             border: 1px solid #e4dcd0;
@@ -51,6 +51,8 @@ def inject() -> None:
           div[data-testid="stMetric"] label { color: #6b625a; }
           div[data-testid="stMetricValue"] { font-size: 1.35rem !important; overflow: visible; }
           [data-testid="stToolbar"] { display: none; }
+          header[data-testid="stHeader"] { display: none !important; }
+          div[data-testid="stDecoration"] { display: none; }
           .caption-note { color: #6b625a; font-size: 0.95rem; margin-top: -0.4rem; margin-bottom: 1rem; }
           .source-line { color: #6b625a; font-size: 0.82rem; }
           .wordmark { font-family: "Source Serif 4", Georgia, serif; font-size: 1.7rem; color: #1f6b4a; margin-bottom: 0; }

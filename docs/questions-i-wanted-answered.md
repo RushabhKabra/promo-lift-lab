@@ -9,6 +9,7 @@ Each one is something I actually wanted to know, with the check that tells me th
 | Which campaigns came in below the comparison group? | `marts.v_campaign_results` where incremental sales are negative | `tests/test_lift.py` builds a campaign that loses. On the full build, `quality/test_sql.py` requires at least one negative scored campaign. |
 | What did the coupon cost, without double-counting products on the same UPC? | `campaign_results.coupon_cost`, `redemption_rate` | `tests/test_metrics.py` locks the redemption denominator to households × UPCs. |
 | Did a tree model beat the last four weeks? | `marts.v_forecast_scores`, Forecast page | `tests/test_forecast_segments.py`. The default model is whichever won. |
+| What would the weekly order have been, and where does a promotion blow past a quiet-week order? | `exports/bi/replenishment_*.csv`, Replenishment page | `tests/test_replenishment.py`. Lead time, service level, and the empty-pipeline assumption are arguments, not hidden constants. |
 | Who buys on discount as a habit? | `marts.v_segment_summary`, Customers page | Threshold 18% of the pre-discount ring and 8 baskets, asserted in the segment test. |
 | Which departments share a basket, and which weekly series move together? | `marts.v_basket_pairs`, `marts.v_halo_pairs` | Basket lift test uses a pair that always travels together. The halo note on the page says the regression is a clue. |
 | Which weeks do not look like their neighbours? | `marts.v_anomalies` | A planted spike is flagged even when the recent history is perfectly flat. |

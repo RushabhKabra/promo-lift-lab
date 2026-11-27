@@ -57,6 +57,7 @@ with left:
         - **Overview** — the year, the discount bill, and weeks that do not look like their neighbours.
         - **Promotion lift** — campaigns that paid, campaigns that did not, and one category walked in full.
         - **Forecast** — a tree model against the mean of the previous four weeks.
+        - **Replenishment** — store-SKU weekly demand, safety stock, and what a promotion does to the order.
         - **Customers** — RFM slices, who buys on discount, and which departments share a basket.
         - **Ask the data** — questions answered from the certified tables, with the metric and the period underneath.
         """

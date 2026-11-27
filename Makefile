@@ -5,7 +5,7 @@ endif
 
 export PYTHONPATH := .
 
-.PHONY: setup ingest ingest-fixtures build test export pricing-view app all lint pipeline pipeline-fixtures
+.PHONY: setup ingest ingest-fixtures build test export pricing-view replenishment app all lint pipeline pipeline-fixtures
 
 setup:
 	$(PYTHON) -m venv .venv
@@ -33,6 +33,9 @@ export:
 
 pricing-view:
 	$(PYTHON) scripts/pricing_view.py
+
+replenishment:
+	$(PYTHON) scripts/replenishment.py
 
 app:
 	$(PYTHON) -m streamlit run app/Home.py --server.headless true
