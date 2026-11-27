@@ -120,3 +120,35 @@ def weighted_mape(actual, predicted) -> float:
     if not mask.any():
         return np.nan
     return float(np.sum(np.abs(actual[mask] - predicted[mask])) / np.sum(actual[mask]))
+
+
+def wape(actual, predicted) -> float:
+    """Sum of absolute errors divided by the sum of actual demand.
+
+    Silent weeks stay in the numerator. A forecast that invents units in a
+    week nothing sold is charged for those units. The denominator is the
+    demand a planner was trying to cover, so a zero week does not grow it.
+    """
+    actual = np.asarray(actual, dtype=float)
+    predicted = np.asarray(predicted, dtype=float)
+    mask = np.isfinite(actual) & np.isfinite(predicted)
+    if not mask.any():
+        return np.nan
+    denom = float(np.sum(actual[mask]))
+    if denom <= 0:
+        return np.nan
+    return float(np.sum(np.abs(actual[mask] - predicted[mask])) / denom)
+
+
+def median_ape(actual, predicted) -> float:
+    """Median of |error| / |actual| on weeks that actually sold.
+
+    MAPE is a mean, and one week with a unit or two can dominate it. The
+    median is the companion, not a replacement.
+    """
+    actual = np.asarray(actual, dtype=float)
+    predicted = np.asarray(predicted, dtype=float)
+    mask = np.isfinite(actual) & np.isfinite(predicted) & (np.abs(actual) > 0)
+    if not mask.any():
+        return np.nan
+    return float(np.median(np.abs(actual[mask] - predicted[mask]) / np.abs(actual[mask])))

@@ -30,6 +30,10 @@ QUERIES = {
     "ops": "SELECT * FROM marts.v_ops_summary",
     "worked": "SELECT * FROM marts.v_worked_example",
     "discount_weeks": "SELECT * FROM marts.v_weekly_discount ORDER BY week_no",
+    "replenishment_summary": "SELECT * FROM marts.v_replenishment_summary",
+    "replenishment_accuracy": "SELECT * FROM marts.v_replenishment_accuracy",
+    "replenishment_weekly": "SELECT * FROM marts.v_replenishment_weekly ORDER BY week_no, department",
+    "replenishment_department": "SELECT * FROM marts.v_replenishment_department",
 }
 
 

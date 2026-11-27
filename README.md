@@ -1,6 +1,26 @@
 # promo-lift lab
 
-A weekend lab for measuring whether grocery promotions actually earn their keep.
+I measure whether a grocery promotion earned its discount, and what the weekly order should have been. It is a weekend project, built after seeing promotions and ordering decisions first-hand in a grocery meat department. The figures below come from the public Complete Journey household panel.
+
+### Key findings
+
+- **The extra sales did not cover the discount.** On 27,555 product-store pairs with a baseline, feature weeks added **$133,971.26** of net sales, a **60.97%** lift over those pairs' own quiet weeks. Discounts on those weeks were **$172,181.45**. The ROI proxy is **0.78**.
+- **Department error is 8.70%. Store-SKU error is about 100%.** The mean of the previous four weeks beat a gradient-boosted tree on department net sales: sales-weighted MAPE **8.70%** versus **13.12%** on the last 12 weeks. On product × store the same mean has holdout WAPE **100.85%** and MAPE **66.89%** (bias **−0.18** units). A promo adjustment moves paired WAPE to **100.11%** and is worse on the feature weeks (**95.39%** versus **90.62%**).
+- **A quiet-week order misses the flyer.** In the last 8 study weeks, feature weeks ran **12,610.5** panel units above the quiet-week mean (**50.20%** of 15,394 feature weeks). Putting the feature rate on quiet weeks would have left **29,538.8** units. In meat, **61.54%** of feature weeks beat the quiet mean.
+
+**Skills shown:** SQL, Python, PostgreSQL, Power BI/Excel exports, testing.
+
+### Quick start
+
+```bash
+cp .env.example .env
+docker compose up -d
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+make pipeline && make replenishment && make app
+```
+
+`make pipeline` rebuilds the warehouse and certifies the promotion findings. `make replenishment` writes the store-SKU forecast, the safety stock, and the order file from the same public mirrors. Postgres is required for the pipeline. The replenishment pass only needs the mirrors in `data/raw`, and it downloads them if they are missing. What each step checks is under Quick start below. The order write-up is [`docs/replenishment.md`](docs/replenishment.md).
 
 ## Why I built this
 
@@ -34,7 +54,7 @@ Study window 1 January 2017 to 1 January 2018, the calendar the Complete Journey
 - **On 27,555 product-store pairs with a baseline** (39.10% of non-fuel feature-week sales), counting silent weeks as zero, feature weeks added **$133,971.26** of net sales. That is a **60.97%** lift. The ROI proxy, that increment divided by the discounts on those feature weeks ($172,181.45), is **0.78**. The extra cash did not cover the discount bill.
 - **Most of that 60.97% is "a sale happened."** On weeks that actually rang up, the average ring was **$3.48** on a feature week against **$3.15** on a quiet week, a lift of **10.50%** (107,083 feature weeks, 303,347 quiet weeks). I cannot see which silent weeks were out of stock, so I quote both.
 - **11 of 21 scored campaigns** have incremental net sales below zero. Campaign 8 (Type A, 8 May 2017 to 25 June 2017, 1,076 mailed households) is the clearest miss: **−$9,001.88** incremental net sales against **$819.70** of coupon and match discounts, ROI proxy **−10.98**. Campaign 18 (Type A) is the largest positive gap: **$17,943.99** on a coupon bill of **$1,964.72**, ROI proxy **9.13**. Some other ROI figures are nonsense because the coupon bill is a few dollars. I rank on the incremental dollars.
-- **The four-week mean beat the tree.** Sales-weighted MAPE on the last 12 weeks was **8.70%** for the mean of the previous four weeks and **13.12%** for the gradient-boosted model (12.96% without the flyer). Grocery alone was 6.31% versus 7.36%. The default forecast is the four-week mean.
+- **The four-week mean beat the tree.** Sales-weighted MAPE on the last 12 weeks was **8.70%** for the mean of the previous four weeks and **13.12%** for the gradient-boosted model (12.96% without the flyer). Grocery alone was 6.31% versus 7.36%. The default forecast is the four-week mean. At product × store that same mean has a WAPE of 100.85%. The order quantity, the safety stock, and what a promotion does to both are in [`docs/replenishment.md`](docs/replenishment.md).
 - **653 households (26.45%)** put at least 18% of their pre-discount ring on a recorded discount, with at least 8 baskets. Champions are 496 households (20.09%) and **$2,059,155.24** of net sales (44.80%). Meat and packaged meat share a basket at a lift of **2.08**.
 
 Deli meats is the category I would walk through: 470 pairs, feature-week sales $6,926.22, quiet-week run-rate $4,601.67, gap $2,324.55 (50.52%), discounts $1,107.22, ROI proxy 2.10. It is one of the few places the extra cash covered the discount. The campaign test is stricter than that, and it is the one I would defend.
@@ -83,7 +103,7 @@ pip install -r requirements.txt
 make pipeline && make app
 ```
 
-`make pipeline` runs ingest, build, tests, and export under one run id. `make ingest` still downloads the mirrors into `data/raw` (not committed) and loads staging if you want the steps one at a time. `make build` rebuilds the star schema, refuses to continue if the totals drift, and writes the marts. `make test` runs the unit tests and, when Postgres is up, the SQL assertions. After a successful pipeline run, the marts also land in `exports/curated/` as parquet, with one folder per study week where the grain is weekly.
+`make pipeline` runs ingest, build, tests, and export under one run id. `make ingest` still downloads the mirrors into `data/raw` (not committed) and loads staging if you want the steps one at a time. `make build` rebuilds the star schema, refuses to continue if the totals drift, and writes the marts. `make replenishment` scores store-SKU weekly demand from those mirrors and writes `exports/bi/replenishment_*.csv`. It checks that non-fuel units still equal the certified grocery total before it writes. `make test` runs the unit tests and, when Postgres is up, the SQL assertions. After a successful pipeline run, the marts also land in `exports/curated/` as parquet, with one folder per study week where the grain is weekly.
 
 The ask page works with no API key. It answers from the certified snapshot and prints the metric, the grain, and the period. If you set `OPENAI_API_KEY` (and `pip install openai`), the same page will also ask a model. The model only receives the aggregate snapshot and the glossary, not household rows. `LLM_MODEL` defaults to `gpt-4o-mini`.
 
@@ -100,7 +120,8 @@ CI uses the committed slice in `data/fixtures` and does not download anything. T
 - `warehouse/` — staging, the star schema, the views I will quote, and the `ops` run audit.
 - `quality/` — the contracts and the assertions that fail the build.
 - `analysis/` — lift, the forecast horse-race, segments, baskets, anomalies.
-- `app/` — the five pages.
+- `replenishment/` — store-SKU forecast, safety stock, reorder point, and the promotion risk flags.
+- `app/` — the six pages.
 - `insights/` — the question layer, templated unless a key is set.
 - `exports/` — the Excel briefing, the CSV extracts, and week-partitioned parquet under `exports/curated/`.
 - `docs/` — the question, the formulas, the process, and the brief.

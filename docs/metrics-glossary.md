@@ -74,6 +74,34 @@ The study window is the calendar the `completejourney` mirror reconstructed, rou
 - **Formula:** discount cost ÷ gross sales ≥ 0.18, and at least 8 distinct baskets.
 - **Caveat:** this is a habit of buying on offer across the year, not a lift during one campaign. The 0.18 cut is a round threshold I can defend, not a quantile I refit every run.
 
+## Replenishment: store-SKU forecast, safety stock, order
+
+These are defined in `replenishment/` and checked in `tests/test_replenishment.py`. The grain is product × store × week. Units are `grocery_units` (quantity, fuel removed). Partial weeks, fewer than six distinct dates, are dropped. Silent weeks are filled with zero between a series' first and last sale and nowhere else.
+
+A series is scored only when it has at least 8 sale weeks before the holdout and at least 8 calendar weeks of span before the holdout, and it is still selling in the holdout. The holdout is the last 8 non-partial study weeks. Forecasts are one step ahead. The current week is not an input.
+
+- **Moving average:** mean of the previous 4 weeks in the series, zeros included.
+- **Seasonal naive:** units in the same study week 52 weeks earlier. With one year of history this is usually missing. It becomes the default only when it has at least half as many scored points as the moving average and a lower WAPE.
+- **Promo-adjusted:** mean of the previous 4 quiet weeks. On a week that is already on display or in the mailer, that mean is scaled by this series' own past feature-to-quiet ratio, shrunk by `n / (n + 4)`. The shrinkage is fixed. It is not tuned on the holdout. Two prior feature weeks are required before any lift is applied.
+- **WAPE:** sum of absolute errors ÷ sum of actual units, silent weeks included in the numerator. This is the number I rank models on.
+- **MAPE:** mean of `|actual − predicted| / |actual|` where actual is not zero. Small weeks pull it around. Median APE is published beside it.
+- **Bias:** mean of `predicted − actual`, in units per store-SKU-week. Positive means the forecast ran hot.
+- **Default:** lowest holdout WAPE among models with enough scored points. A tie keeps the simpler model, moving average first. The promo forecast is blank until four quiet weeks exist, so I also publish WAPE on the intersection, the weeks both forecasts can score. The default rule does not switch to that intersection. On the full run the two rankings agree, and I say so.
+
+The order is a weekly periodic review. Lead time defaults to 1 week and the service level to 95%. Neither comes from a distribution-centre file.
+
+- **Safety stock:** `z × σ_quiet × sqrt(lead time + 1)`. `σ_quiet` is the sample standard deviation of quiet weeks before the holdout. Promo spikes are not in it. `z` is the standard normal quantile of the service level.
+- **Reorder point:** quiet weekly mean × lead time + `z × σ_quiet × sqrt(lead time)`.
+- **Order-up-to:** quiet weekly mean × (lead time + 1) + safety stock.
+- **Suggested order quantity:** the order-up-to level. On-hand and on-order are not in this panel, so the figure assumes the pipeline is empty.
+- **Feature order-up-to:** same formula with the feature-week mean in place of the quiet mean, when the series has at least 2 feature weeks before the holdout. Safety stock stays the quiet-week sigma.
+- **Stock-out flag:** the feature-week mean exceeds the quiet mean plus one week of `z × σ_quiet`. Ordering the everyday buffer into that promo would miss a typical promo week.
+- **Overstock flag:** the feature mean minus the quiet mean is larger than the safety stock. Ordering the promo quantity again on a quiet week overshoots the buffer.
+- **Holdout shortfall:** on feature weeks in the holdout, units by which actual demand exceeded the pre-holdout quiet mean (and, separately, the quiet mean plus one week of safety stock).
+- **Holdout leftover:** on quiet holdout weeks, units by which the pre-holdout feature mean exceeded actual demand. A second leftover counts a quiet week that follows a feature week, using the prior week's actual units as the mistaken order.
+
+The demand is panel households at that store, not the store's full movement. A suggested order is the method, not a case quantity anyone should have sent.
+
 ## A few companions I also publish
 
 - **Off-feature discount share:** discount dollars on lines with no display and no mailer, divided by all discount dollars. This is the loyalty and coupon money that is not sitting on a feature.
